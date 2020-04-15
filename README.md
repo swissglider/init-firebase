@@ -18,13 +18,13 @@ In the firestore you already **need** to have the following Collection/Documents
     | moderator      | - able to change all document entries and delete them<br>- but can not change the owner
     | editor         | - able to change all document entires<br>- but can not delete or change any group or owner
 
-### Change and adapt Rules
+## Change and adapt Rules
 **Only** change the rules on `!!!!! do ONLY changes here !!!!!!!`
 
-### Database Diagramm
+## Database Schema
 ![..](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/swissglider/init-firebase/master/schema/db.wsd)
 
-### To test:
+## To test:
 1) Clone the repository
 2) npm install
 3) npm test
