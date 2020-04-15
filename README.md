@@ -27,4 +27,5 @@ In the firestore you already **need** to have the following Collection/Documents
 ## To test:
 1) Clone the repository
 2) npm install
-3) npm test
+3) firebase emulators:start --only firestore
+4) npm test
