@@ -12,15 +12,11 @@ In the firestore you already need to have the following Collection/Documents:
     | Role           | Description |
     |----------------|-------------|
     | admin          | - can do everythining|
-    | authWriter     | - able to do everything|
-    |                | - but not read/write any admin users,
-    |                | - can also not give himself admin
+    | authWriter     | - able to do everything <br> - but not read/write any admin users<br>- can also not give himself admin
     | authRead       | - able to read everything
     | documentsAdmin | - able to change all document entries and delete them
-    | moderator      | - able to change all document entries and delete them, 
-    |                | - but can not change the owner
-    | editor         | - able to change all document entires 
-    |                | - but can not delete or change any group or owner
+    | moderator      | - able to change all document entries and delete them<br>- but can not change the owner
+    | editor         | - able to change all document entires<br>- but can not delete or change any group or owner
 
 
 ### Database Diagramm
