@@ -1,0 +1,32 @@
+{
+    "users/hans": {
+        "email": "hans@meier.com",
+        "roles": ["admin"]
+    },
+    "profiles/hans": {
+        "displayName": "Hans Meier",
+        "photoURL": ""
+    },
+    "users/hans2": {
+        "email": "hans2@meier.com"
+        
+    },
+    "profiles/hans2": {
+        "displayName": "Hans Meier",
+        "photoURL": ""
+    },
+    "users/hansi": {
+        "email": "hansi@meier.com"
+    },
+    "profiles/hansi": {
+        "displayName": "Hansi Meier",
+        "photoURL": ""
+    },
+    "users/blockeUser": {
+        "email": "hansa@meier.com"
+    },
+    "profiles/blockeUser": {
+        "displayName": "Hansa Meier",
+        "photoURL": ""
+    }
+}

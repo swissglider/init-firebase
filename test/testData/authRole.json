@@ -1,0 +1,43 @@
+{
+    "authRole/admin": {
+        "authGroup": [
+            "*"
+        ],
+        "authActivity": [
+            "*"
+        ],
+        "users": [
+            "userXRX"
+        ]
+    },
+    "authRole/supereditor": {
+        "authGroup": [
+            "*"
+        ],
+        "authActivity": [
+            "read",
+            "write"
+        ],
+        "users": []
+    },
+    "authRole/superuser": {
+        "authGroup": [
+            "*"
+        ],
+        "authActivity": [
+            "create",
+            "update",
+            "read"
+        ],
+        "users": [
+            "hansi"
+        ]
+    },
+    "authRole/onlyAuthAdmin": {
+        "authGroup": [],
+        "authActivity": [
+            "readAuth",
+            "writeAuth"
+        ]
+    }
+}

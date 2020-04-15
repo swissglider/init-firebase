@@ -1,0 +1,22 @@
+{
+    "posts/post1": {
+        "content": "Content1",
+        "owner": "userXRX1",
+        "title": "Title1"
+    },
+    "posts/post2": {
+        "content": "Content2",
+        "owner": "userXRX1",
+        "title": "Title2"
+    },
+    "posts/post3": {
+        "content": "Content3",
+        "owner": "userXRX",
+        "title": "Title3"
+    },
+    "posts/post4": {
+        "content": "Content4",
+        "owner": "hansi",
+        "title": "Title4"
+    }
+}

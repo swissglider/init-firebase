@@ -1,0 +1,35 @@
+@startuml db
+
+object users {
+    roles:[<string>]
+    groups:[<authGroups>]
+}
+note "Possible roles:\n'admin'\n'authRead', 'authWrite',\n'moderator', 'documentsAdmin'" as authActivityNote
+users .. authActivityNote
+
+object profiles {
+    displayName:string
+    photoURL:string
+}
+
+object authGroup {
+    groups:Array
+}
+note "Only one authGroup exists:\n\ttheAuthGroup,\ngroups are in the groups array" as authAuthGroupNote
+authGroup .. authAuthGroupNote
+
+object authRole {
+    roles:Array
+}
+note "Only one authRole exists:\n\ttheAuthRole,\nroles are in the roles array" as authAuthRoleNote
+authRole .. authAuthRoleNote
+
+object documents {
+    ..whatever..:string
+    owner:string
+    groups:[<authGroups>]
+}
+
+object blacklist
+
+@enduml

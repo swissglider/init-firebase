@@ -1,0 +1,384 @@
+// *********************************************************************
+// authRole/theAuthRole/roles:
+// ------------------------------
+// - admin              --> can do everythining
+// - authWriter         --> able to do everything 
+//                          but not read/write any admin users,
+//                          can also not give himself admin
+// - authRead           --> able to read everything
+//
+// - documentsAdmin     --> able to change all document entries and delete them
+// - moderator          --> able to change all document entries and delete them, 
+//                          but can not change the owner
+// - editor             --> able to change all document entires 
+//                          but can not delete or change any group or owner
+//
+// this Roles has to be in the authRole.roles list in the DB !!
+// *********************************************************************
+// authGroup/theAuthGroup/groups:
+// ------------------------------
+//
+// authGroup/theAuthGroup with groups Array must be in the DB !!
+// *********************************************************************
+
+rules_version = '2';
+service cloud.firestore {
+
+	match /databases/{database}/documents {
+
+// *********************************************************************
+// *********************************************************************
+// !!!!! do ONLY changes here !!!!!!!
+// *********************************************************************
+// to add a new Collection like post etc. 
+// add in checkCollectionTypes a new statement
+// and add the new validation function like post
+// *********************************************************************
+// *********************************************************************
+    // writeStatus => create or update checkCollectionTypePost
+    // collection name (all collection expect the users/profile/auth*/blacklist)
+    function checkCollectionTyps(writeStatus, collectionName, documentId, incomingData, storedData) {
+      return
+        ((collectionName == "document2xTest") ? checkCollectionTypeDocumentToxTest(writeStatus, incomingData) : true) && 
+        // this is a sample post function
+        ((collectionName == "post") ? checkCollectionTypePost(writeStatus) : true)
+    }
+    function checkCollectionTypeDocumentToxTest(writeStatus, incomingData){
+      // this has to be modified per collection type (both following returns are the same and are possible and correct)
+      // return  request.resource.data.keys().hasOnly(["owner", "groups"]) &&
+      //         request.resource.data.keys().hasAll(["owner", "groups"])
+      return  incomingData.keys().hasOnly(["owner", "groups"]) &&
+              incomingData.keys().hasAll(["owner", "groups"])
+    }
+    function checkCollectionTypePost(writeStatus){
+      // this is a sample post function
+      return  false;
+    }
+
+// *********************************************************************
+// *********************************************************************
+// *********************************************************************
+// !!!!! do NOT change ANYTHING after here !!!!!!!
+// *********************************************************************
+    function getUser(){
+      return (isNotBlackListed())
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : false;
+    }
+
+    function getAuthGroupList(){
+      return (isNotBlackListed())
+        ? get(/databases/$(database)/documents/authGroup/theAuthGroup).data.groups
+        : false;
+    }
+
+    function areGroupsInAuthGroupList(groupsToTest){
+      return (isNotBlackListed())
+        ? getAuthGroupList().hasAll(groupsToTest)
+        : false;
+    }
+
+    function getAuthRoleList(){
+      return (isNotBlackListed())
+        ? get(/databases/$(database)/documents/authRole/theAuthRole).data.roles
+        : false;
+    }
+
+    function areRolesInAutRoleList(rolesToTest){
+      return (isNotBlackListed())
+        ? getAuthRoleList().hasAll(rolesToTest)
+        : false;
+    }
+
+    function getRole(role){
+      return (isNotBlackListed())
+        ? get(/databases/$(database)/documents/authRole/$(role)).data
+        : null;
+    }
+
+    function isNotBlackListed() {
+      return !exists(/databases/$(database)/documents/blacklist/$(request.auth.uid));
+    }
+
+    function isNotAuthCollention(collectionName){
+      return (isNotBlackListed())
+        ? collectionName != "users" && 
+          collectionName != "profiles" && 
+          collectionName != "authGroup" && 
+          collectionName != "authRole" && 
+          collectionName != "blacklist"
+        : false;
+    }
+
+    // secure by default
+    match /{document=**} {
+      allow read: if false ;
+      allow write: if false;
+    }
+
+// *********************************************************************
+// user
+
+    match /users/{user} {
+      function isAuthAdmin(){
+        return (isNotBlackListed())
+        ? ("admin" in getUser().roles) 
+        : false;
+      }
+      function canWrite(){
+        return (isNotBlackListed())
+        ? ("admin" in getUser().roles || "authWrite" in getUser().roles) 
+        : false;
+      }
+      function canRead(user){
+        return (isNotBlackListed())
+        ? ("authRead" in getUser().roles) || user ==  request.auth.uid
+        : false;
+      }
+      function checkData(){
+        return (isNotBlackListed())
+        ? request.resource.data.keys().hasOnly(["roles", "groups"]) &&
+          request.resource.data.keys().hasAll(["roles", "groups"]) &&
+          areGroupsInAuthGroupList(request.resource.data.groups) &&
+          areRolesInAutRoleList(request.resource.data.roles)
+          // request.resource.data.diff({"roles":"", "groups":""}).addedKeys().size() == 0 &&
+          // request.resource.data.diff({"roles":"", "groups":""}).removedKeys().size() == 0 &&
+        : false;
+      }
+      function standardCreationRules(user){
+        return (isNotBlackListed())
+        ? request.auth.uid != null && user == request.auth.uid &&
+          request.resource.data.roles == [] && 
+          request.resource.data.groups == [] &&
+          request.auth.token.email_verified
+        : false;
+      }
+      allow create: if standardCreationRules(user) && checkData();
+      allow read: if canRead(user) || canWrite();
+      allow create: if checkData() && canWrite() && !('admin' in request.resource.data.roles);
+      allow update: if checkData() && canWrite() && !('admin' in request.resource.data.roles) && !('admin' in get(/databases/$(database)/documents/users/$(user)).data.roles);
+      allow delete: if canWrite() && !('admin' in get(/databases/$(database)/documents/users/$(user)).data.roles);
+      allow create: if checkData() && isAuthAdmin();
+      allow update: if checkData() && isAuthAdmin();
+      allow delete: if isAuthAdmin();
+    }
+
+// *********************************************************************
+// profiles
+
+    match /profiles/{profile} {
+      function isAuthAdmin(){
+        return (isNotBlackListed())
+        ? ("admin" in getUser().roles) 
+        : false;
+      }
+      function canUpdate(profile){
+        return (isNotBlackListed())
+        ? (
+            "admin" in getUser().roles 
+            || ("authWrite" in getUser().roles && !('admin' in get(/databases/$(database)/documents/users/$(profile)).data.roles)) 
+            || profile ==  request.auth.uid
+          )
+        : false;
+      }
+      function canDelete(profile){
+        return (isNotBlackListed())
+        ? (
+            "admin" in getUser().roles 
+            || ("authWrite" in getUser().roles && !('admin' in get(/databases/$(database)/documents/users/$(profile)).data.roles))
+          )
+        : false;
+      }
+      function checkData(){
+        return (isNotBlackListed())
+        ? request.resource.data.keys().hasOnly(["displayName", "photoURL"]) &&
+          request.resource.data.keys().hasAll(["displayName", "photoURL"]) &&
+          request.resource.data.displayName is string && 
+          request.resource.data.photoURL is string
+        : false
+      }
+      function canRead(){
+        return (isNotBlackListed())
+        ? request.auth.uid != null
+        : false;
+      }
+      allow create: if request.auth.uid != null && profile == request.auth.uid && checkData();
+      allow read: if canRead();
+      allow create, update: if canUpdate(profile) && checkData();
+      allow delete: if canDelete(profile)
+      // allow write: if isAuthAdmin() && checkData();
+    }
+
+// *********************************************************************
+// blacklist
+
+    match /blacklist/{blacklistID} {
+      function checkData(){
+        return (isNotBlackListed())
+        ? request.resource.data.keys().hasOnly([]) &&
+          request.resource.data.keys().hasAll([])
+        : false;
+      }
+      function canWrite(){
+        return (isNotBlackListed())
+        ?
+          "admin" in getUser().roles ||
+          ("authWrite" in getUser().roles && !('admin' in get(/databases/$(database)/documents/users/$(blacklistID)).data.roles))
+        : false;
+      }
+      function canRead(){
+        return (isNotBlackListed())
+        ? request.auth.uid != null
+        : false;
+      }
+      allow list: if canRead();
+      allow read, write: if checkData() && canWrite();
+    }
+
+// *********************************************************************
+// authGroup
+
+    match /authGroup/{authGroup} {
+      function checkData(authGroup){
+        return (isNotBlackListed()) 
+        ? authGroup == "theAuthGroup" &&
+          request.resource.data.keys().hasOnly(['groups']) &&
+          request.resource.data.keys().hasAll(['groups']) &&
+          request.resource.data.groups.size() != -10 &&
+          !(request.resource.data.groups is string)
+        : false
+      }
+      function canRead(authGroup){
+        return (isNotBlackListed())
+        ? authGroup == "theAuthGroup" &&
+          request.auth.uid != null
+        : false;
+      }
+      function canWrite(v){
+        return (isNotBlackListed())
+        ? authGroup == "theAuthGroup" &&
+          "admin" in getUser().roles ||
+          "authWrite" in getUser().roles
+        : false;
+      }
+      allow get: if canRead(authGroup);
+      allow write: if canWrite(authGroup) && checkData(authGroup);
+    }
+
+// *********************************************************************
+// authRole
+
+    match /authRole/{authRole} {
+      function checkData(authRole){
+        return (isNotBlackListed()) 
+        ? authRole == "theAuthRole" &&
+          request.resource.data.keys().hasOnly(['roles']) &&
+          request.resource.data.keys().hasAll(['roles']) &&
+          request.resource.data.roles.size() != -10 &&
+          !(request.resource.data.roles is string)
+        : false
+      }
+      function canRead(authRole){
+        return (isNotBlackListed())
+        ? authRole == "theAuthRole" &&
+          request.auth.uid != null
+        : false;
+      }
+      function canWrite(v){
+        return (isNotBlackListed())
+        ? authRole == "theAuthRole" &&
+          "admin" in getUser().roles ||
+          "authWrite" in getUser().roles
+        : false;
+      }
+      allow get: if canRead(authRole);
+      allow write: if canWrite(authRole) && checkData(authRole);
+    }
+
+// *********************************************************************
+// collestionName
+
+    match /{collectionName}/{documentId} {
+      function checkData(writeStatus){
+        return  checkStandardData() && 
+                checkCollectionTyps(writeStatus, collectionName, documentId, request.resource.data, resource.data)
+                
+      }
+      function checkStandardData(){
+        return  request.resource.data.keys().hasAll(["owner", "groups"]) &&
+                request.resource.data.owner is string && 
+                exists(/databases/$(database)/documents/users/$(request.resource.data.owner)) &&
+                areGroupsInAuthGroupList(request.resource.data.groups)
+      }
+      function canRead(){
+        // the own documents can be readed,
+        // all documents in a group the user is in can be readed
+        // and also admin, authWrite, authRead, moderator, documentsAdmin, editor can read
+        return (isNotBlackListed() && isNotAuthCollention(collectionName))
+        ? "admin" in getUser().roles ||
+          "authWrite" in getUser().roles ||
+          "authRead" in getUser().roles ||
+          "editor" in getUser().roles ||
+          "moderator" in getUser().roles ||
+          "documentsAdmin" in getUser().roles ||
+          resource.data.owner == request.auth.uid ||
+          resource.data.groups.hasAny(getUser().groups)
+        : false
+      }
+      function canCreate(){
+        return (isNotBlackListed() && isNotAuthCollention(collectionName))
+        ? 
+          (request.resource.data.owner == request.auth.uid || canWriteOwnerEntry()) && 
+          (request.resource.data.groups == [] || canWriteGroupEntry()) &&
+          checkData('create')
+        : false
+      }
+      function canUpdate(){
+        return (isNotBlackListed() && isNotAuthCollention(collectionName))
+        ? 
+          // check if owner has changed
+          (("owner" in request.resource.data.keys() && request.resource.data.owner != resource.data.owner)
+            ? canWriteOwnerEntry() 
+            : true
+          ) &&
+          // check if groups has changed
+          (("groups" in request.resource.data.keys() && request.resource.data.groups != resource.data.groups)
+            ? canWriteGroupEntry()
+            : true
+          ) &&
+          checkData('update')
+        : false
+      }
+      function canDelete(){
+        // the own documents can be deleted, and also admin, authWrite, moderator, documentsAdmin can delete
+        return (isNotBlackListed() && isNotAuthCollention(collectionName))
+        ? 
+          "admin" in getUser().roles ||
+          "authWrite" in getUser().roles ||
+          "moderator" in getUser().roles ||
+          "documentsAdmin" in getUser().roles ||
+          resource.data.owner == request.auth.uid
+        : false
+      }
+      function canWrite(){
+        return canCreate() && canUpdate() && canDelete()
+      }
+      function canWriteGroupEntry(){
+        return  "admin" in getUser().roles || 
+                "authWrite" in getUser().roles ||
+                "moderator" in getUser().roles ||
+                "documentsAdmin" in getUser().roles
+      }
+      function canWriteOwnerEntry(){
+        return  "admin" in getUser().roles || 
+                "authWrite" in getUser().roles ||
+                "documentsAdmin" in getUser().roles
+      }
+      allow read: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+      allow write: if canWrite();
+    }
+  }
+}
