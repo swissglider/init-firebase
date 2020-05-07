@@ -2,7 +2,7 @@
 
 object users {
     roles:[<string>]
-    groups:[<authGroups>]
+    groups:[<string>]
 }
 note "Possible roles:\n'admin'\n'authRead', 'authWrite',\n'moderator', 'documentsAdmin'" as authActivityNote
 users .. authActivityNote
@@ -27,7 +27,7 @@ authRole .. authAuthRoleNote
 object documents {
     ..whatever..:string
     owner:string
-    groups:[<authGroups>]
+    groups:[<string>]
 }
 
 object blacklist
