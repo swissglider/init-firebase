@@ -7,7 +7,7 @@ To use this rules, just inport it into your Firestore project. (firestone.rules)
 To use the admin roles in an app, you need to give the rigth rigts to some users.
 
 In the firestore you already **need** to have the following Collection/Documents:  
-- authGroup/theAutGroup (with the groups Array),
+- authGroup/theAuthGroup (with the groups Array),
 - authRole/theAuthRole/roles with the following roles:  
     | Role           | Description |
     |----------------|-------------|
