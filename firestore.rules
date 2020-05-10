@@ -227,9 +227,7 @@ service cloud.firestore {
         : false;
       }
       function canRead(){
-        return (isNotBlackListed())
-        ? request.auth.uid != null
-        : false;
+        return request.auth.uid != null;
       }
       allow list: if canRead();
       allow read, write: if checkData() && canWrite();
