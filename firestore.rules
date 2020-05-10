@@ -232,7 +232,7 @@ service cloud.firestore {
         : false;
       }
       allow list: if canRead();
-      allow read, write: if checkData() && canWrite();
+      allow read, write, delete: if checkData() && canWrite();
     }
 
 // *********************************************************************
